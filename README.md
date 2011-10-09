@@ -1,22 +1,25 @@
-des
-===
+Data Encryption Standard (DES)
+==============================
+
 ## Description
 Yet another C implementation of DES.
+
 ## Usage
 Example of usage :
-<code>
+
     $ ./des
     usage: des [-de] [-i infile] [-o outfile] [-k=key]
     -e       encrypt infile to outfile using key
     -d       decrypt infile to outfile using key
     $ ./des -e -i /bin/ls -o /tmp/ls_encrypted -k "hello!"
     $ ./des -d -i /bin/ls_encrypted -o /tmp/ls -k "hello!"
-    $ diff /tmp/ls /bin/ls
+    $ diff /tmp/ls /bin/ls && echo same
+    same
     $
-</code>
 
 ## License
-Copyright (c) 2010 C. Chorin, S. Rannou <mxs@buffout.org>
+* Copyright (c) 2010 C. Chorin, S. Rannou <mxs@buffout.org>
+* Copyright (c) 2011 L. Barge, S. Bigonneau, N. Vivet <nizox@ph0k.eu>
 
 Permission to use, copy, modify, and distribute this software for any
 purpose with or without fee is hereby granted, provided that the above
