@@ -5,6 +5,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <errno.h>
 #include <err.h>
 
 #include "des.h"
@@ -16,7 +17,8 @@ static struct des des = {
 	.op =	ENCRYPT,
 	.mode = EBC,
 	.ifd =	-1,
-	.ofd =	-1
+	.ofd =	-1,
+	.bufsize = 4096,
 };
 
 /* check validity of parameters (files, ...) exit on failure */
@@ -30,6 +32,43 @@ static void des_init(void)
 		err(1, "can't open input file %s", des.ipath);
 	if ((des.ofd = open(des.opath, O_WRONLY | O_TRUNC | O_CREAT, 0644)) == -1)
 		err(1, "can't open output file %s", des.opath);
+
+	switch (des.mode) {
+	case EBC:
+		des.encrypt = des_mode_ebc;
+		break;
+	default:
+		fprintf(stderr, "des: unknown mode used\n");
+		exit(1);
+	}
+}
+
+static void des_encrypt(void)
+{
+	unsigned char *buf;
+	long buflen, bytes, pad;
+
+	buf = malloc(des.bufsize);
+	if (buf == NULL)
+		err(1, "cannot allocation required buffer");
+
+	do
+	{
+		buflen = 0;
+		while (buflen != des.bufsize
+		    && (bytes = read(des.ifd, buf + buflen, des.bufsize - buflen)))
+		{
+			if (bytes == -1 && errno == EINTR) continue;
+			else if (bytes < 0) break;
+			buflen += bytes;
+		}
+		for (pad = buflen % 8; pad && pad < 8; ++pad)
+			buf[buflen++] = 0;
+		des.encrypt(&des, buf, buflen);
+		write(des.ofd, buf, buflen);
+	}
+	while (buflen == des.bufsize);
+	free(buf);
 }
 
 int main(int argc, char *argv[])
@@ -61,7 +100,7 @@ int main(int argc, char *argv[])
 	des_init();
 	des_key_permute(des.key);
 	des_generate_subkeys(des.key, des.subkeys);
-	des_mode(&des);
+	des_encrypt();
 
 	return 0;
 }

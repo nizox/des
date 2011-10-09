@@ -16,14 +16,16 @@ enum ciphermode {
 };
 
 struct des {
-	enum operation	op;	/* current operation */
-	enum ciphermode	mode;	/* current mode */
-	unsigned char	key[8];	/* key to use */
+	enum operation	op;	 /* current operation */
+	enum ciphermode	mode;	 /* current mode */
+	unsigned char	key[8];	 /* key to use */
 	unsigned char	subkeys[16][6];
-	char *		ipath;	/* path of input file */
-	char *		opath;	/* path of output file */
-	int		ifd;	/* input file descriptor */
-	int		ofd;	/* output file descriptor */
+	char *		ipath;	 /* path of input file */
+	char *		opath;	 /* path of output file */
+	int		ifd;	 /* input file descriptor */
+	int		ofd;	 /* output file descriptor */
+	int		bufsize; /* size of the read buffer (must be a mutilple of 8) */
+	void		(*encrypt)(struct des *, unsigned char *, long); /* buffer encryption function */
 };
 
 void des_mode(struct des *des);
@@ -32,6 +34,7 @@ void binary_dumpc(unsigned char c);
 void binary_dumpi(unsigned int c);
 void des_key_permute(unsigned char *key);
 void des_generate_subkeys(unsigned char *key, unsigned char (*subkeys)[6]);
+void des_mode_ebc(struct des *des, unsigned char *buf, long len);
 
 #define DUMP_KEY(key)				\
 	binary_dumpc(key[0]);			\
