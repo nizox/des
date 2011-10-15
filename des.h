@@ -18,14 +18,15 @@ enum ciphermode {
 struct des {
 	enum operation	op;	 /* current operation */
 	enum ciphermode	mode;	 /* current mode */
-	unsigned char	key[8];	 /* key to use */
-	unsigned char	subkeys[16][6];
+	unsigned char	keys[3][8];
+	unsigned char	subkeys[3][16][6];
 	char *		ipath;	 /* path of input file */
 	char *		opath;	 /* path of output file */
 	int		ifd;	 /* input file descriptor */
 	int		ofd;	 /* output file descriptor */
 	int		bufsize; /* size of the read buffer (must be a mutilple of 8) */
 	void		(*encrypt)(struct des *, unsigned char *, long); /* buffer encryption function */
+	int		step;	 /* state used during 3DES */
 };
 
 void des_mode(struct des *des);

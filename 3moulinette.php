@@ -10,13 +10,13 @@ foreach ($files as $file) {
   if (is_file($dir . $file) && is_readable($dir . $file)) {
     echo ".";
     $fp = $dir . $file;
-    $random_key = substr(sha1(rand()), 0, 6);
+    $random_key = substr(sha1(rand()), 0, 24);
 
     $results[$fp] = array();
     $results[$fp]['key'] = $random_key;
 
     /* Encryption test */
-    file_put_contents('/tmp/moulinette_php', mcrypt_encrypt(MCRYPT_DES, $random_key, file_get_contents($fp), MCRYPT_MODE_ECB));
+    file_put_contents('/tmp/moulinette_php', mcrypt_encrypt(MCRYPT_3DES, $random_key, file_get_contents($fp), MCRYPT_MODE_ECB));
     $hash_php_des = sha1(file_get_contents('/tmp/moulinette_php'));
     exec("./des -e -i $fp -o /tmp/moulinette -k $random_key");
     $hash_our_des = sha1(file_get_contents("/tmp/moulinette"));
@@ -25,7 +25,7 @@ foreach ($files as $file) {
     $results[$fp]['success'] = $hash_our_des === $hash_php_des;
 
     /* Decryption test */
-    $hash_php_des = sha1(mcrypt_decrypt(MCRYPT_DES, $random_key, file_get_contents('/tmp/moulinette_php'), MCRYPT_MODE_ECB));
+    $hash_php_des = sha1(mcrypt_decrypt(MCRYPT_3DES, $random_key, file_get_contents('/tmp/moulinette_php'), MCRYPT_MODE_ECB));
     exec("./des  -d -i /tmp/moulinette -o /tmp/moulinette_decrypt -k $random_key");
     $hash_our_des = sha1(file_get_contents("/tmp/moulinette_decrypt"));
     $results[$fp]['php_decrypted_hash'] = $hash_php_des;

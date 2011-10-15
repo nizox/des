@@ -18,7 +18,7 @@ static struct des des = {
 	.mode = EBC,
 	.ifd =	-1,
 	.ofd =	-1,
-	.bufsize = 4096,
+	.bufsize = 8192,
 };
 
 /* check validity of parameters (files, ...) exit on failure */
@@ -41,11 +41,24 @@ static void des_init(void)
 		fprintf(stderr, "des: unknown mode used\n");
 		exit(1);
 	}
+
+	/* Keying option 2 K1 and K2 are independent and K3 = K1 */
+	if (des.step == 2)
+		memcpy(des.keys[des.step++], des.keys[0], 8);
+	/* K1 and K3 must be swaped for decryption */
+	if (des.op == DECRYPT && des.step == 3) {
+		unsigned char tmp[8];
+
+		memcpy(tmp, des.keys[2], 8);
+		memcpy(des.keys[2], des.keys[0], 8);
+		memcpy(des.keys[0], tmp, 8);
+	}
 }
 
 static void des_encrypt(void)
 {
 	unsigned char *buf;
+	int step;
 	long buflen, bytes, pad;
 
 	buf = malloc(des.bufsize);
@@ -64,7 +77,13 @@ static void des_encrypt(void)
 		}
 		for (pad = buflen % 8; pad && pad < 8; ++pad)
 			buf[buflen++] = 0;
-		des.encrypt(&des, buf, buflen);
+		step = des.step;
+		for (des.step = 0; des.step < step; ++des.step) {
+			des.encrypt(&des, buf, buflen);
+			des.op = (des.op == ENCRYPT) ? DECRYPT : ENCRYPT;
+		}
+		des.step = step;
+		des.op = (des.op == ENCRYPT) ? DECRYPT : ENCRYPT;
 		write(des.ofd, buf, buflen);
 	}
 	while (buflen == des.bufsize);
@@ -74,6 +93,7 @@ static void des_encrypt(void)
 int main(int argc, char *argv[])
 {
 	int ch;
+	int i, len;
 
 	while ((ch = getopt(argc, argv, "dei:o:k:")) != -1)
 		switch (ch) {
@@ -90,16 +110,24 @@ int main(int argc, char *argv[])
 			des.opath = optarg;
 			break;
 		case 'k':
-			memcpy(des.key, optarg, MIN(strlen(optarg), 8));
-			break;
+			if (des.step < 3) {
+				for (i = 0, len = MIN(strlen(optarg), 24); i < len; ++i) {
+					if (i && i % 8 == 0) ++des.step;
+					des.keys[des.step][i % 8] = optarg[i];
+				}
+				++des.step;
+				break;
+			}
 		default:
 			usage();
 			/* NOTREACHED */
 		}
 
 	des_init();
-	des_key_permute(des.key);
-	des_generate_subkeys(des.key, des.subkeys);
+	for (i = 0; i < des.step; ++i) {
+		des_key_permute(des.keys[i]);
+		des_generate_subkeys(des.keys[i], des.subkeys[i]);
+	}
 	des_encrypt();
 
 	return 0;

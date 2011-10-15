@@ -240,7 +240,7 @@ void des_cipher_block(struct des *des, unsigned char *block)
 		/* the only difference between crypt/encrypt is the order of subkeys */
 		subkey_rank = des->op == ENCRYPT ? i : (15 - i);
 		for (j = 0; j < 6; ++j)
-			tmp[j] = right[j] ^ des->subkeys[subkey_rank][j];
+			tmp[j] = right[j] ^ des->subkeys[des->step][subkey_rank][j];
 		des_split_6b(tmp, b);
 		des_sub_s(s, b, left);
 		memcpy(left, oldr, sizeof(left));
